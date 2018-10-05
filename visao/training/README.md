@@ -242,3 +242,10 @@ Para acompanhar o treinamento no tensorboard execute:
 ```bash
 tensorboard --logdir=gs://${YOUR_GCS_BUCKET}/model_dir
 ```
+Para monitorar o status de cada job: https://console.cloud.google.com/mlengine/jobs
+Para o live logging
+```bash
+gcloud ml-engine jobs list
+#JOB id do comando acima
+gcloud ml-engine jobs stream-logs ${JOB_ID}
+```
