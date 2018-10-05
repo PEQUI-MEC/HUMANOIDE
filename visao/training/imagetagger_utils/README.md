@@ -2,9 +2,9 @@
 
 ## ImageTagger
 
-ImageTagger Original: https://imagetagger.bit-bots.de/
-Projeto GitHub: https://github.com/bit-bots/imagetagger
-Servidor do pequi: http://pequi.dynu.net:8000/
+ImageTagger Original: https://imagetagger.bit-bots.de/  
+Projeto GitHub: https://github.com/bit-bots/imagetagger  
+Servidor do pequi: http://pequi.dynu.net:8000/  
 
 ### Tutorial
 
