@@ -2,9 +2,9 @@
 
 ## ImageTagger
 
-ImageTagger Original: https://imagetagger.bit-bots.de/
-Projeto GitHub: https://github.com/bit-bots/imagetagger
-Servidor do pequi: http://pequi.dynu.net:8000/
+ImageTagger Original: https://imagetagger.bit-bots.de/  
+Projeto GitHub: https://github.com/bit-bots/imagetagger  
+Servidor do pequi: http://pequi.dynu.net:8000/  
 
 ### Tutorial
 
@@ -79,7 +79,7 @@ To create an administrator user, run `./manage.py createsuperuser`.
 
 Para criar uma anotação crie um time e entre na pagina de perfil do time, no canto inferior direito clique em 'Create Format'
 
-**Base**
+**Base**  
 Esse é o formato padrão do sistema, ele é aceito para importar anotações no próprio sistema
 Base Format
 ```
@@ -98,7 +98,7 @@ Not in image format
 %%imagename|%%type|not in image
 ```
 
-**CSV**
+**CSV**  
 Esse é o formato para exportar pra treinamento no Tensorflow Object Dection API
 Base Format
 ```

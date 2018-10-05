@@ -10,12 +10,12 @@ E para acelerar o tempo treinamento foi usado a [API de Machine Learning](https:
 
 ### Tutorial:
 
-**Tensorflow Object Detection API**
+**Tensorflow Object Detection API**  
 Para instalatar a Tensorflow Object Detection API siga este tutorial: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md
 Instale também as metricas da COCO API (incluido no tutorial)
 Adicione também o caminho da pasta no seu PYTHONPATH (incluido no tutorial)
 
-**Google Cloud**
+**Google Cloud**  
 Se cadastre no google cloud
 https://cloud.google.com/
 Dentro do [console](https://console.cloud.google.com) crie um projeto, nesse tutorial supor o nome 'humanoid_project'
@@ -41,7 +41,7 @@ gcloud auth application-default login
 gcloud config set project humanoid-210523
 ```
 
-**Preparação do dataset**
+**Preparação do dataset**  
 As fotos classificadas devem estar nesta pasta da seguinte forma:
 ```bash
 ├── training
@@ -98,7 +98,7 @@ gsutil cp train.record gs://${YOUR_GCS_BUCKET}/data/
 gsutil cp test.record gs://${YOUR_GCS_BUCKET}/data/
 ```
 
-**Configuração do modelo**
+**Configuração do modelo**  
 O tensorflow disponibiliza um conjunto de modelos já pretreinados no COCO dataset para treinamento.
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
 Baixe o modelo adequado para o seu embarcado, para maior velocidade:
@@ -198,7 +198,7 @@ Copie os arquivos para o gcloud storage
 gsutil cp * gs://${YOUR_GCS_BUCKET}/data/
 ```
 
-**Invocando a Machine Learning API**
+**Invocando a Machine Learning API**  
 No bucket crie uma pasta chamada model_dir, que será onde será salvo o modelo treianado
 Seu bucket a esse ponte deve estar dessa forma:
 ```lang-none
