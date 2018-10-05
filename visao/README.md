@@ -10,11 +10,11 @@ Nesse projeto o objetivo é desenvolver um software capaz de detectar um grupo o
 
 **Objetivos**
 
-* Elaboração do software responsável pela visão, que consiste na detecção e localização de objetos;  
+* Elaboração do software responsável pela visão, que consiste na detecção e localização de objetos;
 
-* Integração com a camera e dispositivo computacional a serem utilizados no projeto;  
+* Integração com a camera e dispositivo computacional a serem utilizados no projeto;
 
-* Teste da eficiência e precisão da detecção dos objetos necessários;  
+* Teste da eficiência e precisão da detecção dos objetos necessários;
 
 * Teste do consumo de recursos computacionais e viabilidade no sistema embarcado;
 
@@ -22,7 +22,8 @@ Nesse projeto o objetivo é desenvolver um software capaz de detectar um grupo o
 
 O hardware é composto por uma placa de desenvolvimento Raspberry Pi 3 Model B v1.2 e uma Raspberry Pi Camera Rev1.3
 
-![image alt text](https://i.imgur.com/rQYCpGt.jpg =300x)![image alt text](https://i.imgur.com/dcqhKiT.jpg =255x)
+<img src="https://i.imgur.com/rQYCpGt.jpg" width="300"/><img src="https://i.imgur.com/dcqhKiT.jpg" width="255"/> 
+
 
 	Figura 1. Raspberry Pi 3 B v1.2	  	Figura 2. Raspberry Pi Camera Rev1.3
 
@@ -216,5 +217,7 @@ pip install imutils
 [5] [https://www.theimpossiblecode.com/blog/build-faster-opencv-raspberry-pi3/](https://www.theimpossiblecode.com/blog/build-faster-opencv-raspberry-pi3/)
 
 [6] [https://github.com/lhelontra/tensorflow-on-arm/](https://github.com/lhelontra/tensorflow-on-arm/)
+
 [7] [https://www.pyimagesearch.com/2015/02/02/just-open-sourced-personal-imutils-package-series-opencv-convenience-functions/](https://www.pyimagesearch.com/2015/02/02/just-open-sourced-personal-imutils-package-series-opencv-convenience-functions/)
+
 
