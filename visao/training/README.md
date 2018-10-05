@@ -249,3 +249,22 @@ gcloud ml-engine jobs list
 #JOB id do comando acima
 gcloud ml-engine jobs stream-logs ${JOB_ID}
 ```
+
+**Exportar Modelo**  
+
+IMPORTANTE: A exportação do arquivo .pb (frozen graph) deve ser feito no disṕositivo que sera feito a inferencia, pois o tensorflow faz otimizações de acordo com a dispositivo na exportação
+Quando o treino tiver completa vai ser gerado alguns arquivos model.ckpt-XXXX, copie para seu dispotivo e em models/research rode:
+
+```bash
+# From tensorflow/models/research/
+export CHECKPOINT_NUMBER=80000
+gsutil cp gs://${YOUR_GCS_BUCKET}/data/pipeline.config pipeline.config
+gsutil cp gs://${YOUR_GCS_BUCKET}/model_dir/model.ckpt-${CHECKPOINT_NUMBER}.* .
+python object_detection/export_inference_graph.py \
+    --input_type image_tensor \
+    --pipeline_config_path pipeline.config \
+    --trained_checkpoint_prefix model.ckpt-${CHECKPOINT_NUMBER} \
+    --output_directory ~/models
+```
+
+O arquivo vai ser gerado na pasta ~/models
