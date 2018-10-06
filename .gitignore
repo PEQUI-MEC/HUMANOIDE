@@ -144,3 +144,13 @@ venv.bak/
 
 
 # End of https://www.gitignore.io/api/c++,python,visualstudiocode
+
+visao/old
+visao/training/images/test/*
+visao/training/images/train/*
+visao/training/train.record
+visao/training/test.record
+visao/training/imagetagger_utils/images/*
+visao/training/imagetagger_utils/old_tags
+visao/training/imagetagger_utils/old_tags
+visao/detection/models/
