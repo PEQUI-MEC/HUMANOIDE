@@ -1,3 +1,4 @@
+
 ######## Webcam Object Detection Using Tensorflow-trained Classifier #########
 #
 # Author: Evan Juras
@@ -30,7 +31,7 @@ from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
 # Name of the directory containing the object detection module we're using
-MODEL_NAME = 'ball_uefa'
+MODEL_NAME = 'model_dir'
 
 # Grab path to current working directory
 CWD_PATH = os.getcwd()
