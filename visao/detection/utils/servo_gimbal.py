@@ -12,7 +12,7 @@ def _loop(servo):
             if(flag):
                 if(not servo.moveplus()):
                     flag = False
-                    servo.moveminus()
+          s          servo.moveminus()
             else:
                 if(not servo.moveminus()):
                     flag = True
@@ -53,6 +53,8 @@ class Servo:
         self.angle_min_max = angle_min_max
         self.angle = 0
         self.delay = delay
+
+        self.old_angle = 0
 
         self.looping = False
         
@@ -143,7 +145,7 @@ class Gimbal():
         self.servoPan = servoPan
         self.delay = delay
         self.ports = ports
-        self.serial = serial.Serial('/dev/ttyUSB0', 230400, timeout=0)
+        #self.serial = serial.Serial('/dev/ttyUSB0', 230400, timeout=0)
         self.data_pelv = [0]*8
 
     def loopSerialSend(self):
@@ -156,7 +158,7 @@ class Gimbal():
                 ##print(self.data_pelv)
                 self.data_pelv = [90+i for i in self.data_pelv]
                 send_pelv = np.array([255]+self.data_pelv+[254], dtype=np.uint8)
-                self.serial.write(struct.pack('>10B', *(send_pelv.tolist())))
+                #self.serial.write(struct.pack('>10B', *(send_pelv.tolist())))
         except Exception as e:
             print(e)
 

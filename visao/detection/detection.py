@@ -24,11 +24,12 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import sys
+import threading
 
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
-class ObjectDetection():
+class ObjectDetector():
     def __init__(self, MODEL_NAME="model_dir"):
         print("Incializando detector...")
         self.IM_WIDTH = 640    #Use smaller resolution for
@@ -79,36 +80,50 @@ class ObjectDetection():
         # Number of objects detected
         self.num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-        self.detectedOnce = False
+        self.makingInference = False
+
+        (self.boxes, self.scores, self.classes, self.num) = self.detect(np.zeros((1, 480, 640, 3)))
+        self.runnedOnce = False
+
+    def detectThread(self, frame):
+        if(not self.makingInference):
+            t = threading.Thread(target=self.detect, args=(frame,))
+            t.daemon = True
+            t.start()
 
     def detect(self, frame):
+        self.makingInference = True
         (self.boxes, self.scores, self.classes, self.num) = self.sess.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: frame})
-        self.detectedOnce = True
+        self.makingInference = False
+        self.runnedOnce = True
+        return (self.boxes, self.scores, self.classes, self.num)
+
+    def getResults(self):
         return (self.boxes, self.scores, self.classes, self.num)
 
     def drawDetectionsOnFrame(self, frame, thresh=0.6):
-        if(not self.detectedOnce):
+        if(self.makingInference or not self.runnedOnce):
             return
         vis_util.visualize_boxes_and_labels_on_image_array(
             frame,
-            np.squeeze(boxes),
-            np.squeeze(classes).astype(np.int32),
-            np.squeeze(scores),
+            np.squeeze(self.boxes),
+            np.squeeze(self.classes).astype(np.int32),
+            np.squeeze(self.scores),
             self.category_index,
             use_normalized_coordinates=True,
             line_thickness=8,
             min_score_thresh=thresh)
 
-    def getDetectionsCord(self, thresh=0.6):
-        if(not self.detectedOnce):
+    def getDetectionsCords(self, frame, thresh=0.6):
+        if(self.makingInference or not self.runnedOnce):
             return
         coordinates = vis_util.return_coordinates(
                             frame,
-                            np.squeeze(boxes),
-                            np.squeeze(classes).astype(np.int32),
-                            np.squeeze(scores),
+                            np.squeeze(self.boxes),
+                            np.squeeze(self.classes).astype(np.int32),
+                            np.squeeze(self.scores),
                             self.category_index,
                             use_normalized_coordinates=True,
                             line_thickness=8,
@@ -126,7 +141,7 @@ if __name__ == '__main__':
     freq = cv2.getTickFrequency()
     font = cv2.FONT_HERSHEY_SIMPLEX
     
-    detector = ObjectDetection()
+    detector = ObjectDetector()
 
     # Initialize USB webcam feed
     camera = cv2.VideoCapture(0)
@@ -163,4 +178,4 @@ if __name__ == '__main__':
 
     camera.release()
 
-cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
