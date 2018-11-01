@@ -12,7 +12,7 @@ def _loop(servo):
             if(flag):
                 if(not servo.moveplus()):
                     flag = False
-          s          servo.moveminus()
+                    servo.moveminus()
             else:
                 if(not servo.moveminus()):
                     flag = True
@@ -54,8 +54,10 @@ class Servo:
         self.angle = 0
         self.delay = delay
 
+        self.target_angle_var = 0
         self.old_angle = 0
-
+        self.real_angle = 0
+        
         self.looping = False
         
         self.TimerRunning = False
@@ -75,12 +77,14 @@ class Servo:
         if(self.angle < self.angle_min_max[1]):
             self.setTimer()
             return self.setAngle(self.getAngle() + self.step)
+            self.target_angle_var = self.step
         return False
 
     def moveminus(self):
         if(self.angle > self.angle_min_max[0]):
             self.setTimer()
             return self.setAngle(self.getAngle() - self.step)
+            self.target_angle_var = -self.step
         return False
 
     def loop(self):
@@ -105,6 +109,7 @@ class Servo:
         return self.angle
 
     def setAngle(self, angle):
+        self.old_angle = self.angle
         if(angle >= self.angle_min_max[0] and angle <= self.angle_min_max[1]):
                 self.angle = angle
                 return True

@@ -63,7 +63,7 @@ tilt = Servo(angle_min_max=(-35,35),delay = 0.1)
 pan = Servo(angle_min_max=(-90,90),delay = 0.0025,step=20)
 gimbal = Gimbal(pan,tilt)
 gimbal.run()
-tilt.moveToAngle(20)
+#tilt.moveToAngle(20)
 
 flags = {
 		"search": 1,
@@ -78,6 +78,7 @@ vs = VideoStream(False).start()
 time.sleep(1.0)
 fps = None
 algorithm = 'None'
+print('Agoritimo de tracking.py executando')
 while(True):
 
     # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
@@ -86,6 +87,9 @@ while(True):
     frame_expanded = np.expand_dims(frame, axis=0)
     (H, W) = frame.shape[:2]
     print(frame_expanded.shape)
+
+    pan_real_angle_bak = pan.real_angle
+    tilt_real_angle_bak = tilt.real_angle
 
     # initialize the set of information we'll be displaying on
     # the frame
@@ -109,13 +113,12 @@ while(True):
             angle_horizontal = translate(centroid[0], 0, W, -78/2, 78/2)
             angle_vertical = translate(centroid[1], 0, H, -48/2, 48/2)
 
+            pan.old_angle = pan_real_angle_bak
+            tilt.old_angle = tilt_real_angle_bak
             if(abs(angle_horizontal) > 5):
-                pan.moveToAngle(pan.getAngle()-angle_horizontal)
+                pan.target_angle_var = angle_horizontal
             if(abs(angle_vertical) > 3):
-                tilt.moveToAngle(tilt.getAngle()+angle_vertical)
-                
-
-            
+                tilt.target_angle_var = angle_vertical
             
         else:
             continue
@@ -129,7 +132,7 @@ while(True):
         # Perform the actual detection by running the model with the image as input
         objectDetector.detectThread(frame_expanded)
         while(objectDetector.makingInference):
-            time.sleep(0.001)
+            time.sleep(0.005)
 
         (boxes, scores, classes, num) = objectDetector.getResults()
 
@@ -148,10 +151,13 @@ while(True):
                 pan.step = 1
                 pan.delay = 0.08
                 tilt.delay = 0.08
-                time.sleep(2)
+                flags['search'] = 0
+                flags['ball'] = 1
                 # All the results have been drawn on the frame, so it's time to display it.
         
         if initBB is None:
+            pan.old_angle = pan_real_angle_bak
+            tilt.old_angle = tilt_real_angle_bak
             pan.loopByStep()
             #time.sleep(1)
 
@@ -181,6 +187,7 @@ while(True):
     if cv2.waitKey(1) == ord('q'):
         break
 
+    print(pan.target_angle_var,tilt.target_angle_var,pan.old_angle,tilt.old_angle)
 
 # Clean up
 
