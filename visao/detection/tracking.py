@@ -62,7 +62,7 @@ objectDetector = ObjectDetector(MODEL_NAME='model_dir')
 tilt = Servo(angle_min_max=(-35,35),delay = 0.1)
 pan = Servo(angle_min_max=(-90,90),delay = 0.0025,step=20)
 gimbal = Gimbal(pan,tilt)
-gimbal.run()
+#gimbal.run()
 #tilt.moveToAngle(20)
 
 flags = {
@@ -72,9 +72,13 @@ flags = {
 	}
 
 c = Communication(gimbal, flags)
-c.run()
+c.start()
+
+print('Iniciando camera')
 
 vs = VideoStream(False).start()
+time.sleep(1.0)
+frame = vs.read()
 time.sleep(1.0)
 fps = None
 algorithm = 'None'
@@ -88,8 +92,7 @@ while(True):
     (H, W) = frame.shape[:2]
     print(frame_expanded.shape)
 
-    pan_real_angle_bak = pan.real_angle
-    tilt_real_angle_bak = tilt.real_angle
+    gimbal.snapshot()
 
     # initialize the set of information we'll be displaying on
     # the frame
@@ -113,8 +116,7 @@ while(True):
             angle_horizontal = translate(centroid[0], 0, W, -78/2, 78/2)
             angle_vertical = translate(centroid[1], 0, H, -48/2, 48/2)
 
-            pan.old_angle = pan_real_angle_bak
-            tilt.old_angle = tilt_real_angle_bak
+            gimbal.setTarget()
             if(abs(angle_horizontal) > 5):
                 pan.target_angle_var = angle_horizontal
             if(abs(angle_vertical) > 3):
@@ -156,11 +158,14 @@ while(True):
                 # All the results have been drawn on the frame, so it's time to display it.
         
         if initBB is None:
-            pan.old_angle = pan_real_angle_bak
-            tilt.old_angle = tilt_real_angle_bak
-            pan.loopByStep()
-            #time.sleep(1)
-
+            """if(not gimbal.search()):
+                flags['turn90'] = 1
+                while(controlador_state != 'TURN90'):
+                    time.sleep(0.01)
+                flags['turn90'] = 0
+                while(controlador_state != 'IDDLE'):
+                    time.sleep(0.01)"""
+        
 
     if(fps is None):
         fps = FPS().start()

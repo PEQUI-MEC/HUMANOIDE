@@ -1,39 +1,8 @@
 import time
 import threading
 
-import serial
 import numpy as np
 import struct
-
-def _loop(servo):
-        t = threading.currentThread()
-        flag = False
-        while getattr(t, "do_run", True):
-            if(flag):
-                if(not servo.moveplus()):
-                    flag = False
-                    servo.moveminus()
-            else:
-                if(not servo.moveminus()):
-                    flag = True
-                    servo.moveplus()
-            time.sleep(servo.delay)
-
-def _timer(servo):
-    #serv.port.ChangeangleCycle(0)
-    servo.TimerRunning = False
-
-def _move(servo, target):
-    while(not(servo.getAngle() >= target-servo.step*2 and servo.getAngle() <= target+servo.step*2)):
-        servo.looping = True
-        #print('moving_target thread running...')
-        if(servo.getAngle() < target):
-            servo.moveplus()
-        else:
-            servo.moveminus()
-        time.sleep(servo.delay)
-    servo.setAngle(target)
-    servo.looping = False
 
 def translate(value, leftMin, leftMax, rightMin, rightMax):
     # Figure out how 'wide' each range is
@@ -47,130 +16,61 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     return rightMin + (valueScaled * rightSpan)
 
 class Servo:
-    def __init__(self, step=1, delay = 0.01, angle_min_max=(-35,35)):
+    def __init__(self, step=1, delay = 0.01, angle_min_max=(-35,35), tolerancia=2):
 
         self.step = step
         self.angle_min_max = angle_min_max
-        self.angle = 0
         self.delay = delay
 
-        self.target_angle_var = 0
-        self.old_angle = 0
-        self.real_angle = 0
+        self.target_angle_var = 0 #variação do angulo a ser movido e levado
+
+        self.abs_angle = 0 #Sempre atulizado pela comunicação
+        self.rel_angle = 0 #Sempre atulizado pela comunicação
         
-        self.looping = False
-        
-        self.TimerRunning = False
-        
-        self.flag = False
-        self.setTimer()
+        self.abs_angle_snapshot = 0 #Atualizado pela função snapshot do gimbal
+        self.abs_angle_target = 0 #Atualizado pela função setTarget() do gimbal / O enviado de volta para o controle
 
-    def setTimer(self, time=0.5):
-        if(self.TimerRunning):
-            self.timer.cancel()       
-        else:
-            self.TimerRunning = True
-        self.timer = threading.Timer(time, _timer, args=(self,))
-        self.timer.start()
+        self.tolerancia = tolerancia
 
-    def moveplus(self):
-        if(self.angle < self.angle_min_max[1]):
-            self.setTimer()
-            return self.setAngle(self.getAngle() + self.step)
-            self.target_angle_var = self.step
-        return False
-
-    def moveminus(self):
-        if(self.angle > self.angle_min_max[0]):
-            self.setTimer()
-            return self.setAngle(self.getAngle() - self.step)
-            self.target_angle_var = -self.step
-        return False
-
-    def loop(self):
-        t = threading.Thread(target=_loop, args=(self,))
-        t.daemon = True
-        t.start()
-        self.loop_thread = t
-        self.looping = True
-    
-    def loopByStep(self):
-        if(self.flag):
-            if(not self.moveplus()):
-                self.flag = False
-                self.moveminus()
-        else:
-            if(not self.moveminus()):
-                self.flag = True
-                self.moveplus()
-        #print('loopBySTep')
-
-    def getAngle(self):
-        return self.angle
-
-    def setAngle(self, angle):
-        self.old_angle = self.angle
-        if(angle >= self.angle_min_max[0] and angle <= self.angle_min_max[1]):
-                self.angle = angle
-                return True
-        else:
-            if(angle < self.angle_min_max[0]):
-                self.angle = self.angle_min_max[0]
-            if(angle > self.angle_min_max[1]):
-                self.angle = self.angle_min_max[1]
-        return False
-
-    def moveToAngle(self, angle):
-        if(not self.looping):
-            if(angle >= self.angle_min_max[0] and angle <= self.angle_min_max[1]):
-                angle_target = angle
+    def moveToRelAngleBlocked(rel_angle_target):
+        while(True):
+            if(self.rel_angle >= rel_angle_target-self.tolerancia or self.rel_angle <= rel_angle_target+self.tolerancia):
+                break
             else:
-                if(angle < self.angle_min_max[0]):
-                    angle_target = self.angle_min_max[0]
-                if(angle > self.angle_min_max[1]):
-                    angle_target = self.angle_min_max[1]
-            #self.port.ChangeangleCycle(angle_target)
-            self.stepToAngle(angle_target)
-            #self.setTimer(time=0.1)
-
-    def stepToAngle(self, angle_target):
-        t = threading.Thread(target=_move, args=(self, angle_target,))
-        t.daemon = True
-        t.start()
-
-    def stop(self):
-        if(self.looping):
-            self.loop_thread.do_run = False
-            self.loop_thread.join()
-            self.looping = False
+                self.abs_angle_target = self.abs_angle
+                self.target_angle_var = rel_angle_target-rel_angle
+            time.sleep(self.delay)
 
 class Gimbal():
-    def __init__(self, servoPan, servoTilt, delay = 0.001, ports=(1,2)):
+    def __init__(self, servoPan, servoTilt, delay = 0.001):
         self.servoTilt = servoTilt
         self.servoPan = servoPan
-        self.delay = delay
-        self.ports = ports
-        #self.serial = serial.Serial('/dev/ttyUSB0', 230400, timeout=0)
-        self.data_pelv = [0]*8
+        self.searchTilt_target = 0.2
+        self.statesPan = np.linspace(-1,1,7)
+        self.runned_states = []
 
-    def loopSerialSend(self):
-        try:
-            while 1:
-                time.sleep(self.delay)
-                self.data_pelv = [0 for i in self.data_pelv]
-                self.data_pelv[self.ports[0]] = self.servoPan.getAngle()
-                self.data_pelv[self.ports[1]] = self.servoTilt.getAngle()
-                ##print(self.data_pelv)
-                self.data_pelv = [90+i for i in self.data_pelv]
-                send_pelv = np.array([255]+self.data_pelv+[254], dtype=np.uint8)
-                #self.serial.write(struct.pack('>10B', *(send_pelv.tolist())))
-        except Exception as e:
-            print(e)
+    def snapshot(self):
+        self.servoTilt.abs_angle_snapshot = self.servoTilt.abs_angle
+        self.servoPan.abs_angle_snapshot = self.servoPan.abs_angle
+        
+    def setTarget(self):
+        self.servoTilt.abs_angle_target = self.servoTilt.abs_angle_snapshot
+        self.servoPan.abs_angle_target = self.servoPan.abs_angle_snapshot
 
-    def run(self):
-        t = threading.Thread(target=self.loopSerialSend)
-        t.daemon = True
-        t.start()
+    def search(self):
+        tilt_angle = self.servoTilt.angle_min_max[1]
+        pan_angle = self.servoPan.angle_min_max[1]
+        self.servoTilt.moveToRelAngleBlocked(self.searchTilt_target*tilt_angle)
+
+        for state in self.statesPan:
+            if state not in runned_states:
+                self.servoPan.moveToRelAngleBlocked(state*pan_angle)
+                return True
+        
+        return False
+
+    def restartSearch(self):
+        self.runned_states = []
         
 
 if __name__ == "__main__":

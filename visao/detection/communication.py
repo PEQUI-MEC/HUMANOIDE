@@ -20,8 +20,7 @@ class Communication(Thread):
 		self.gimbal = gimbal
 		self.flags = flags
 		self.sendDelay = sendDelay
-		self.gimbal_tilt = 0
-		self.gimbal_pan = 0
+
 
 
 	def open_socket(self):
@@ -58,10 +57,10 @@ class Communication(Thread):
 						raise Exception("Bugou")
 					data = eval(flag)
 					self.controlador_state = data[0]
-					self.gimbal_tilt = data[1]
-					self.gimbal_pan = data[2]
-					self.gimbal.servoPan.real_angle = self.gimbal_pan
-					self.gimbal.servoTilt.real_angle = self.gimbal_tilt
+					self.gimbal.servoPan.abs_angle = data[2]
+					self.gimbal.servoTilt.abs_angle = data[1]
+					self.gimbal.servoPan.rel_angle = data[4]
+					self.gimbal.servoTilt.rel_angle = data[3]
 					print("Recebendo:", data)
 				except Exception as e:
 					print(e)
@@ -88,7 +87,7 @@ class Communication(Thread):
 				#execute aqui seu codigo
 				#test_pitch = 0
 				#test_yall = 0
-				info = [self.gimbal.servoPan.target_angle_var, self.gimbal.servoTilt.target_angle_var, self.gimbal.servoPan.old_angle, self.gimbal.servoTilt.old_angle,
+				info = [self.gimbal.servoTilt.target_angle_var, self.gimbal.servoPan.target_angle_var, self.gimbal.servoTilt.abs_angle_target, self.gimbal.servoPan.abs_angle_target,
 						self.flags['search'], self.flags['ball'], self.flags['turn90']]
 				#info = [test_pitch, test_yall, self.gimbal_tilt, self.gimbal_pan, self.flags['search'], self.flags['ball'], self.flags['turn90']]
 				time.sleep(self.sendDelay)
@@ -124,9 +123,6 @@ if __name__ == '__main__':
 	tilt = Servo()
 	gimbal = Gimbal(pan,tilt)
 
-	pan.loop()
-	tilt.loop()
-		
 	flags = {
 		"search": 1,
 		"ball": 0,
@@ -134,9 +130,14 @@ if __name__ == '__main__':
 	}
 
 	a = Communication(gimbal,flags)
-	#a.daemon = True
-	#a.start()
 	a.run()
+
+	if(not gimbal.search()):
+		flags['turn90'] = 1
+		while(controlador_state != 'TURN90'):
+			time.sleep(0.01)
+		while(controlador_state != 'IDDLE'):
+			time.sleep(0.01)
 
 	while True:
 		time.sleep(500)
