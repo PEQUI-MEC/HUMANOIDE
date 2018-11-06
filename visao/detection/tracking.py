@@ -39,6 +39,29 @@ from detection import ObjectDetector
 
 #Trackers
 
+def bb_intersection_over_union(boxA, boxB):
+	# determine the (x, y)-coordinates of the intersection rectangle
+	xA = max(boxA[0], boxB[0])
+	yA = max(boxA[1], boxB[1])
+	xB = min(boxA[2], boxB[2])
+	yB = min(boxA[3], boxB[3])
+ 
+	# compute the area of intersection rectangle
+	interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+ 
+	# compute the area of both the prediction and ground-truth
+	# rectangles
+	boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+	boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+ 
+	# compute the intersection over union by taking the intersection
+	# area and dividing it by the sum of prediction + ground-truth
+	# areas - the interesection area
+	iou = interArea / float(boxAArea + boxBArea - interArea)
+ 
+	# return the intersection over union value
+	return iou
+
 OPENCV_OBJECT_TRACKERS = {
 		"csrt": cv2.TrackerCSRT_create,
 		"kcf": cv2.TrackerKCF_create,
@@ -49,7 +72,7 @@ OPENCV_OBJECT_TRACKERS = {
 		"mosse": cv2.TrackerMOSSE_create
 	}
 
-tracker = OPENCV_OBJECT_TRACKERS['csrt']()
+tracker = OPENCV_OBJECT_TRACKERS['medianflow']()
 
 initBB = None
 
@@ -83,6 +106,11 @@ time.sleep(1.0)
 fps = None
 algorithm = 'None'
 print('Agoritimo de tracking.py executando')
+
+tracking_frame_number = 0
+
+reddetection_frames = 50
+detection_threshhold = 80 #0 a 100
 while(True):
 
     # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
@@ -90,7 +118,6 @@ while(True):
     frame = vs.read()
     frame_expanded = np.expand_dims(frame, axis=0)
     (H, W) = frame.shape[:2]
-    print(frame_expanded.shape)
 
     gimbal.snapshot()
 
@@ -99,13 +126,18 @@ while(True):
 
     # check to see if we are currently tracking an object
     if initBB is not None:
+        tracking_frame_number += 1
+
+        if(tracking_frame_number >= reddetection_frames):
+            objectDetector.detectThread(frame_expanded)
         # grab the new bounding box coordinates of the object
         #objectDetector.detectThread(frame_expanded)
         (success, box) = tracker.update(frame)
-
+        
         # check to see if the tracking was a success
         if success:
             #Get init cord
+
             (x, y, w, h) = [int(v) for v in box]
             #draw on frame bouding box
             cv2.rectangle(frame, (x, y), (x + w, y + h),
@@ -114,14 +146,42 @@ while(True):
             centroid = ((x+x+w)/2,(y+y+h)/2)
 
             angle_horizontal = translate(centroid[0], 0, W, -78/2, 78/2)
-            angle_vertical = translate(centroid[1], 0, H, -48/2, 48/2)
+            angle_vertical = translate(centroid[1], 0, H, 48/2, -48/2)
 
             gimbal.setTarget()
             if(abs(angle_horizontal) > 5):
                 pan.target_angle_var = angle_horizontal
             if(abs(angle_vertical) > 3):
                 tilt.target_angle_var = angle_vertical
-            
+
+
+            if(tracking_frame_number >= reddetection_frames):
+                while(objectDetector.makingInference):
+                    time.sleep(0.005)
+                coordinates = objectDetector.getDetectionsCords(frame)
+                detected = False
+                for detection in coordinates:
+                    if(detection[-1] > detection_threshhold-20):
+                        initBB = (detection[3],detection[1],abs(detection[4]-detection[3]),abs(detection[2]-detection[1]))
+                        network_bb = (detection[3],detection[1],detection[4],detection[2]) #trial and error
+                        track_bb = (x,y,x+w,y+h)
+                        iou = bb_intersection_over_union(network_bb,track_bb)
+                        print("IOU", iou)
+                        tracker = OPENCV_OBJECT_TRACKERS['csrt']()
+                        tracker.init(frame, initBB)
+                        detected = True
+                if(not detected):
+                    initBB = None
+                    flags['search'] = 1
+                    flags['ball'] = 0
+                tracking_frame_number = 0
+
+                        
+                # All the results have been drawn on the frame, so it's time to display it.
+                
+
+            print("Angle Variation: ", (angle_horizontal, angle_vertical))
+
         else:
             continue
 
@@ -144,15 +204,13 @@ while(True):
         coordinates = objectDetector.getDetectionsCords(frame)
 
         for detection in coordinates:
-            if(detection[-1] > 1):
+            if(detection[-1] > detection_threshhold):
                 print(detection)
                 initBB = (detection[3],detection[1],abs(detection[4]-detection[3]),abs(detection[2]-detection[1])) #trial and error
                 print(initBB)
                 tracker.init(frame, initBB)
                 fps = FPS().start()
-                pan.step = 1
-                pan.delay = 0.08
-                tilt.delay = 0.08
+                tracking_frame_number = 0
                 flags['search'] = 0
                 flags['ball'] = 1
                 # All the results have been drawn on the frame, so it's time to display it.
@@ -191,8 +249,6 @@ while(True):
     # Press 'q' to quit
     if cv2.waitKey(1) == ord('q'):
         break
-
-    print(pan.target_angle_var,tilt.target_angle_var,pan.old_angle,tilt.old_angle)
 
 # Clean up
 
